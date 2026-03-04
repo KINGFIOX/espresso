@@ -16,8 +16,9 @@ jobs:
       - name: Build
         run: |
           sudo apt-get update
-          sudo apt-get install -y asciidoctor
-          cmake -B build && make -C build
+          sudo apt-get install -y asciidoctor meson ninja-build
+          meson setup build -Dbuild_doc=enabled
+          ninja -C build
         env:
           CC: /usr/bin/${{ matrix.cc }}
           CFLAGS: "-Wpedantic -Wall -Werror"
@@ -26,9 +27,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build
-        run: cmake -DBUILD_DOC=NO -B build && make -C build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build
+          meson setup build -Dbuild_doc=disabled
+          ninja -C build
       - name: Test
-        run: cd build && ctest
+        run: meson test -C build
   format-test:
     runs-on: ubuntu-20.04
     steps:
@@ -36,7 +41,6 @@ jobs:
       - name: Install formatters
         run: |
           npm install -g prettier
-          pip install cmakelang
           sudo snap install shfmt
       - run: ./format.sh
       - name: Check changes
@@ -54,6 +58,9 @@ jobs:
           curl -L https://github.com/chipsalliance/espresso/releases/download/v2.4/x86_64-linux-gnu-espresso -o espresso2
           sudo chmod +x espresso2
       - name: Build current espresso
-        run: cmake -DBUILD_DOC=NO -B build && make -C build
+        run: |
+          sudo apt-get install -y meson ninja-build
+          meson setup build -Dbuild_doc=disabled
+          ninja -C build
       - name: Use espresso2 -Dverify to check the equivalence
         run: fd --exclude '*o64*' . examples/ --type f --exec bash -c 'printf "\n{}:\n" && ./espresso2 -Dverify {} <(build/espresso < {})'

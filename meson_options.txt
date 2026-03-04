@@ -1,0 +1,1 @@
+option('build_doc', type: 'feature', value: 'auto', description: 'Build man page with asciidoctor')
